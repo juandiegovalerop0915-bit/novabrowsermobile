@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Nova</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@400;600;700&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Outfit:wght@400;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bar: #121212;
+      --text: #f0f0f0;
+      --muted: #999;
+      --accent: #7c5cfc;
+      --input: #1e1e1e;
+      --border: #2a2a2a;
+      --font: 'Inter', system-ui, sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%; height: 100dvh;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+    /* Top chrome */
+    #chrome {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      padding-top: var(--safe-top);
+      background: var(--bar);
+      border-bottom: 1px solid var(--border);
+    }
+    #chrome.has-rgb {
+      border-bottom: 2px solid transparent;
+      background:
+        linear-gradient(var(--bar), var(--bar)) padding-box,
+        linear-gradient(90deg,#ff006e,#8338ec,#3a86ff,#06d6a0,#ff006e) border-box;
+      background-size: 100% 100%, 300% 100%;
+      animation: rgb 4s linear infinite;
+    }
+    @keyframes rgb { to { background-position: 0 0, 300% 0; } }
+
+    #tabs-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 8px 0; overflow-x: auto; scrollbar-width: none;
+      min-height: 36px;
+    }
+    #tabs-row::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 0 0 auto; max-width: 140px; min-width: 72px;
+      height: 30px; padding: 0 10px; border-radius: 8px 8px 0 0;
+      background: transparent; color: var(--muted); font-size: 12px;
+      display: flex; align-items: center; gap: 6px;
+      border: none; cursor: pointer; user-select: none;
+    }
+    .tab.active { background: var(--input); color: var(--text); }
+    .tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .tab .x { opacity: 0.6; font-size: 14px; padding: 0 2px; }
+    #btn-new-tab {
+      width: 30px; height: 30px; border: none; border-radius: 8px;
+      background: transparent; color: var(--muted); font-size: 20px;
+    }
+
+    #addr-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 8px 8px;
+    }
+    .icon-btn {
+      width: 36px; height: 36px; border: none; border-radius: 10px;
+      background: transparent; color: var(--text); font-size: 16px;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:disabled { opacity: 0.3; }
+    #url {
+      flex: 1; height: 36px; border-radius: 18px; border: 1px solid var(--border);
+      background: var(--input); color: var(--text); padding: 0 14px;
+      font-size: 14px; font-family: var(--font); outline: none;
+    }
+    #url:focus { border-color: var(--accent); }
+
+    #content {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      top: calc(78px + var(--safe-top));
+      background: var(--bg);
+    }
+    .view { position: absolute; inset: 0; display: none; }
+    .view.active { display: block; }
+    iframe.page {
+      width: 100%; height: 100%; border: 0; background: #fff;
+    }
+
+    /* Start */
+    .start {
+      position: absolute; inset: 0; overflow: auto;
+      background: var(--bg);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 24px 16px calc(90px + var(--safe-bottom));
+    }
+    .logo {
+      font-size: 48px; font-weight: 700; color: var(--accent);
+      margin: 28px 0 20px; letter-spacing: -1px;
+      text-shadow: 0 2px 20px color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+    .search-wrap {
+      width: 100%; max-width: 480px;
+      display: flex; align-items: center;
+      background: var(--input); border: 1px solid var(--border);
+      border-radius: 24px; padding: 0 14px; height: 48px;
+      margin-bottom: 14px;
+    }
+    .search-wrap.focus { border-color: var(--accent); }
+    .search-wrap.has-rgb {
+      border: 2px solid transparent;
+      background:
+        linear-gradient(var(--input), var(--input)) padding-box,
+        linear-gradient(90deg,#ff006e,#8338ec,#3a86ff,#06d6a0,#ff006e) border-box;
+      background-size: 100% 100%, 300% 100%;
+      animation: rgb 4s linear infinite;
+    }
+    .search-wrap input {
+      flex: 1; border: 0; background: transparent; color: var(--text);
+      font-size: 16px; font-family: var(--font); outline: none; height: 100%;
+    }
+    .row-btns { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; justify-content: center; }
+    .row-btns button {
+      background: var(--input); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 16px; border-radius: 12px; font-size: 14px; font-family: var(--font);
+    }
+    .shortcuts {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 12px; width: 100%; max-width: 360px;
+    }
+    .sc {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; padding: 8px 4px; border-radius: 12px; border: none;
+      background: transparent; color: var(--text); font-family: var(--font);
+    }
+    .sc-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: var(--input); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .sc-name { font-size: 11px; color: var(--muted); max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Bottom nav */
+    #bottom {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+      padding-bottom: var(--safe-bottom);
+      background: var(--bar); border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around; align-items: center;
+      height: calc(56px + var(--safe-bottom));
+    }
+    #bottom button {
+      flex: 1; height: 56px; border: none; background: transparent;
+      color: var(--muted); font-size: 11px; font-family: var(--font);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    }
+    #bottom button .ico { font-size: 20px; }
+    #bottom button.on { color: var(--accent); }
+
+    /* Panels */
+    .sheet-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 80;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .sheet-bg.show { opacity: 1; pointer-events: auto; }
+    .sheet {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+      background: #161616; border-radius: 16px 16px 0 0;
+      max-height: 85vh; overflow-y: auto;
+      padding: 12px 16px calc(24px + var(--safe-bottom));
+      transform: translateY(110%); transition: transform 0.25s ease;
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheet h2 { font-size: 17px; margin: 8px 0 16px; display: flex; justify-content: space-between; align-items: center; }
+    .sheet h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin: 18px 0 8px; }
+    .sheet label { display: block; font-size: 13px; color: #bbb; margin-bottom: 4px; }
+    .sheet input[type=text], .sheet input[type=color], .sheet select {
+      width: 100%; margin-bottom: 10px; padding: 12px;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: var(--input); color: var(--text); font-size: 15px; font-family: var(--font);
+    }
+    .sheet input[type=color] { height: 44px; padding: 4px; }
+    .sheet .btn {
+      width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--input); color: var(--text);
+      font-size: 14px; font-family: var(--font);
+    }
+    .check { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 14px; color: #ccc; }
+    .check input { width: 18px; height: 18px; }
+
+    /* AI full screen-ish */
+    #ai-frame {
+      position: fixed; inset: 0; z-index: 70; display: none; flex-direction: column;
+      background: var(--bg); padding-top: var(--safe-top);
+    }
+    #ai-frame.open { display: flex; }
+    #ai-frame header {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      background: var(--bar); border-bottom: 1px solid var(--border);
+    }
+    #ai-frame header span { flex: 1; font-weight: 600; }
+    #ai-frame iframe { flex: 1; border: 0; width: 100%; }
+
+    /* Downloads toast */
+    #dl {
+      position: fixed; left: 12px; right: 12px; bottom: calc(64px + var(--safe-bottom));
+      z-index: 100; display: none; background: #1a1a1a; border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; font-size: 13px;
+    }
+    #dl.show { display: block; }
+  </style>
+</head>
+<body>
+  <div id="chrome">
+    <div id="tabs-row">
+      <div id="tabs"></div>
+      <button id="btn-new-tab" type="button">+</button>
+    </div>
+    <div id="addr-row">
+      <button class="icon-btn" id="btn-back" type="button">←</button>
+      <button class="icon-btn" id="btn-fwd" type="button">→</button>
+      <form id="url-form" style="flex:1;display:flex">
+        <input id="url" type="search" placeholder="Buscar o URL" enterkeyhint="go" autocomplete="off">
+      </form>
+      <button class="icon-btn" id="btn-reload" type="button">↻</button>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <nav id="bottom">
+    <button type="button" id="nav-home" class="on"><span class="ico">⌂</span>Inicio</button>
+    <button type="button" id="nav-ai"><span class="ico">✦</span>IA</button>
+    <button type="button" id="nav-tabs"><span class="ico">⧉</span>Pestañas</button>
+    <button type="button" id="nav-settings"><span class="ico">⚙</span>Ajustes</button>
+  </nav>
+
+  <div class="sheet-bg" id="sheet-bg"></div>
+  <div class="sheet" id="settings-sheet">
+    <h2>Personalizar <button type="button" id="close-settings" class="icon-btn">×</button></h2>
+
+    <h3>Cuenta</h3>
+    <label>Nombre</label>
+    <input type="text" id="profileName" maxlength="40" placeholder="Tu nombre">
+    <label>Iniciales</label>
+    <input type="text" id="profileInitials" maxlength="2" placeholder="N">
+    <label>Color avatar</label>
+    <input type="color" id="profileColor" value="#7c5cfc">
+
+    <h3>Búsqueda</h3>
+    <select id="engine">
+      <option value="google">Google</option>
+      <option value="bing">Bing</option>
+      <option value="duckduckgo">DuckDuckGo</option>
+      <option value="brave">Brave</option>
+    </select>
+
+    <h3>Asistente IA</h3>
+    <select id="aiProvider">
+      <option value="grok">Grok</option>
+      <option value="chatgpt">ChatGPT</option>
+      <option value="meta">Meta AI</option>
+    </select>
+
+    <h3>Tipografía</h3>
+    <select id="fontFamily">
+      <option value="'Inter', system-ui, sans-serif">Inter</option>
+      <option value="'Poppins', system-ui, sans-serif">Poppins</option>
+      <option value="'Roboto', system-ui, sans-serif">Roboto</option>
+      <option value="'Montserrat', system-ui, sans-serif">Montserrat</option>
+      <option value="'Outfit', system-ui, sans-serif">Outfit</option>
+      <option value="'Nunito', system-ui, sans-serif">Nunito</option>
+      <option value="'Segoe UI', system-ui, sans-serif">Segoe UI</option>
+      <option value="system-ui, sans-serif">System UI</option>
+    </select>
+
+    <h3>Colores</h3>
+    <label>Acento</label>
+    <input type="color" id="accentColor" value="#7c5cfc">
+    <label>Fondo inicio</label>
+    <input type="color" id="startBg" value="#0a0a0a">
+    <label>Barras</label>
+    <input type="color" id="barColor" value="#121212">
+
+    <h3>Efectos</h3>
+    <label class="check"><input type="checkbox" id="rgbSearch"> RGB en búsqueda</label>
+    <label class="check"><input type="checkbox" id="rgbBar"> RGB en barra superior</label>
+
+    <h3>Accesos</h3>
+    <button type="button" class="btn" id="addShortcut">+ Añadir acceso</button>
+    <button type="button" class="btn" id="resetShortcuts">Restablecer accesos</button>
+
+    <h3>Otros</h3>
+    <button type="button" class="btn" id="resetAll">Restablecer todo</button>
+  </div>
+
+  <div id="ai-frame">
+    <header>
+      <span id="ai-title">IA</span>
+      <button type="button" class="icon-btn" id="ai-close">×</button>
+    </header>
+    <iframe id="ai-iframe" src="about:blank" allow="clipboard-read; clipboard-write"></iframe>
+  </div>
+
+  <div id="dl"><span id="dl-text"></span></div>
+
+  <script>
+    const ENGINES = {
+      google: 'https://www.google.com/search?q=',
+      bing: 'https://www.bing.com/search?q=',
+      duckduckgo: 'https://duckduckgo.com/?q=',
+      brave: 'https://search.brave.com/search?q='
+    };
+    const AI = {
+      grok: { name: 'Grok', url: 'https://grok.com' },
+      chatgpt: { name: 'ChatGPT', url: 'https://chatgpt.com' },
+      meta: { name: 'Meta AI', url: 'https://www.meta.ai' }
+    };
+    const DEFAULT_SC = [
+      { name: 'YouTube', url: 'https://youtube.com', icon: '▶' },
+      { name: 'Gmail', url: 'https://mail.google.com', icon: '✉' },
+      { name: 'Maps', url: 'https://maps.google.com', icon: '🗺' },
+      { name: 'Wiki', url: 'https://es.wikipedia.org', icon: 'W' },
+      { name: 'Reddit', url: 'https://reddit.com', icon: '◉' },
+      { name: 'X', url: 'https://x.com', icon: '𝕏' },
+      { name: 'GitHub', url: 'https://github.com', icon: '⌘' },
+      { name: 'Drive', url: 'https://drive.google.com', icon: '📁' }
+    ];
+
+    let settings = {
+      engine: 'google', accent: '#7c5cfc', startBg: '#0a0a0a', bar: '#121212',
+      font: "'Inter', system-ui, sans-serif", rgbSearch: false, rgbBar: false,
+      aiProvider: 'grok', profileName: 'Nova', profileInitials: 'N', profileColor: '#7c5cfc',
+      shortcuts: [...DEFAULT_SC]
+    };
+
+    let tabs = [];
+    let activeId = null;
+    let nextId = 1;
+
+    const $ = (id) => document.getElementById(id);
+    const content = $('content');
+    const tabsEl = $('tabs');
+
+    function load() {
+      try {
+        const s = JSON.parse(localStorage.getItem('nova-mobile-v1') || '{}');
+        settings = { ...settings, ...s };
+        if (!Array.isArray(settings.shortcuts)) settings.shortcuts = [...DEFAULT_SC];
+      } catch {}
+    }
+    function save() {
+      localStorage.setItem('nova-mobile-v1', JSON.stringify(settings));
+    }
+
+    function apply() {
+      const r = document.documentElement.style;
+      r.setProperty('--accent', settings.accent);
+      r.setProperty('--bg', settings.startBg);
+      r.setProperty('--bar', settings.bar);
+      r.setProperty('--font', settings.font);
+      document.body.style.fontFamily = settings.font;
+      $('chrome').classList.toggle('has-rgb', !!settings.rgbBar);
+      $('engine').value = settings.engine;
+      $('aiProvider').value = settings.aiProvider;
+      $('fontFamily').value = settings.font;
+      $('accentColor').value = settings.accent;
+      $('startBg').value = settings.startBg;
+      $('barColor').value = settings.bar;
+      $('rgbSearch').checked = !!settings.rgbSearch;
+      $('rgbBar').checked = !!settings.rgbBar;
+      $('profileName').value = settings.profileName || '';
+      $('profileInitials').value = settings.profileInitials || 'N';
+      $('profileColor').value = settings.profileColor || '#7c5cfc';
+      document.querySelectorAll('.logo').forEach(el => el.style.color = settings.accent);
+      document.querySelectorAll('.search-wrap').forEach(el => {
+        el.classList.toggle('has-rgb', !!settings.rgbSearch);
+      });
+      document.querySelectorAll('.start').forEach(el => {
+        el.style.background = settings.startBg;
+      });
+    }
+
+    function resolve(q) {
+      q = (q || '').trim();
+      if (!q) return null;
+      if (/^https?:\/\//i.test(q)) return q;
+      if (/^[a-z0-9-]+(\.[a-z0-9-]+)+/i.test(q) && !q.includes(' ')) return 'https://' + q;
+      return (ENGINES[settings.engine] || ENGINES.google) + encodeURIComponent(q);
+    }
+
+    function createTab(url) {
+      const id = nextId++;
+      const tab = { id, title: url ? '…' : 'Inicio', url: url || null, isStart: !url, view: null, frame: null };
+      tabs.push(tab);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tab';
+      btn.innerHTML = '<span></span><span class="x">×</span>';
+      btn.querySelector('span').textContent = tab.title;
+      btn.onclick = (e) => {
+        if (e.target.classList.contains('x')) { closeTab(id); return; }
+        switchTab(id);
+      };
+      tab.btn = btn;
+      tabsEl.appendChild(btn);
+
+      const view = document.createElement('div');
+      view.className = 'view';
+      content.appendChild(view);
+      tab.view = view;
+
+      if (url) loadUrl(tab, url);
+      else buildStart(tab);
+      switchTab(id);
+      return tab;
+    }
+
+    function buildStart(tab) {
+      tab.isStart = true;
+      tab.frame = null;
+      tab.view.innerHTML = '';
+      const start = document.createElement('div');
+      start.className = 'start';
+      start.innerHTML = `
+        <div class="logo">Nova</div>
+        <div class="search-wrap ${settings.rgbSearch ? 'has-rgb' : ''}">
+          <input type="search" placeholder="Buscar en la web..." enterkeyhint="search">
+        </div>
+        <div class="row-btns">
+          <button type="button" class="go">Buscar</button>
+        </div>
+        <div class="shortcuts"></div>
+      `;
+      tab.view.appendChild(start);
+      const input = start.querySelector('input');
+      const go = () => {
+        const u = resolve(input.value);
+        if (u) loadUrl(tab, u);
+      };
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+      start.querySelector('.go').onclick = go;
+      const grid = start.querySelector('.shortcuts');
+      settings.shortcuts.forEach((s, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sc';
+        b.innerHTML = `<div class="sc-icon">${s.icon || '🔗'}</div><div class="sc-name">${s.name}</div>`;
+        b.onclick = () => loadUrl(tab, s.url);
+        b.oncontextmenu = (e) => {
+          e.preventDefault();
+          if (confirm('¿Quitar ' + s.name + '?')) {
+            settings.shortcuts.splice(i, 1);
+            save();
+            buildStart(tab);
+          }
+        };
+        grid.appendChild(b);
+      });
+      apply();
+    }
+
+    function loadUrl(tab, url) {
+      tab.isStart = false;
+      tab.url = url;
+      tab.title = url.replace(/^https?:\/\//, '').split('/')[0] || 'Página';
+      tab.btn.querySelector('span').textContent = tab.title;
+      tab.view.innerHTML = '';
+      const iframe = document.createElement('iframe');
+      iframe.className = 'page';
+      iframe.setAttribute('allow', 'fullscreen; clipboard-read; clipboard-write');
+      // Note: many sites block iframe; for real APK use Capacitor Browser or in-app browser plugin
+      iframe.src = url;
+      tab.frame = iframe;
+      tab.view.appendChild(iframe);
+      if (tab.id === activeId) $('url').value = url;
+      // fallback notice if blocked
+      iframe.addEventListener('load', () => {
+        try {
+          // cross-origin will throw - ignore
+          void iframe.contentWindow.location.href;
+        } catch {}
+      });
+    }
+
+    function switchTab(id) {
+      activeId = id;
+      tabs.forEach(t => {
+        t.btn.classList.toggle('active', t.id === id);
+        t.view.classList.toggle('active', t.id === id);
+      });
+      const t = tabs.find(x => x.id === id);
+      if (!t) return;
+      $('url').value = t.isStart ? '' : (t.url || '');
+      $('btn-back').disabled = !!t.isStart;
+      updateBottom('home');
+    }
+
+    function closeTab(id) {
+      if (tabs.length <= 1) {
+        const t = tabs[0];
+        buildStart(t);
+        t.title = 'Inicio';
+        t.btn.querySelector('span').textContent = 'Inicio';
+        t.url = null;
+        switchTab(t.id);
+        return;
+      }
+      const i = tabs.findIndex(t => t.id === id);
+      const t = tabs[i];
+      t.btn.remove();
+      t.view.remove();
+      tabs.splice(i, 1);
+      if (activeId === id) switchTab(tabs[Math.min(i, tabs.length - 1)].id);
+    }
+
+    function updateBottom(which) {
+      ['home', 'ai', 'tabs', 'settings'].forEach(k => {
+        const el = $('nav-' + k);
+        if (el) el.classList.toggle('on', k === which);
+      });
+    }
+
+    // Events
+    $('btn-new-tab').onclick = () => createTab();
+    $('btn-back').onclick = () => {
+      const t = tabs.find(x => x.id === activeId);
+      if (t && !t.isStart) buildStart(t);
+      if (t) { t.title = 'Inicio'; t.btn.querySelector('span').textContent = 'Inicio'; $('url').value = ''; }
+    };
+    $('btn-fwd').onclick = () => {};
+    $('btn-reload').onclick = () => {
+      const t = tabs.find(x => x.id === activeId);
+      if (t && t.frame) t.frame.src = t.url;
+      else if (t) buildStart(t);
+    };
+    $('url-form').onsubmit = (e) => {
+      e.preventDefault();
+      const t = tabs.find(x => x.id === activeId);
+      const u = resolve($('url').value);
+      if (t && u) loadUrl(t, u);
+    };
+
+    $('nav-home').onclick = () => {
+      const t = tabs.find(x => x.id === activeId);
+      if (t) { buildStart(t); t.title = 'Inicio'; t.btn.querySelector('span').textContent = 'Inicio'; $('url').value = ''; }
+      updateBottom('home');
+      closeSheets();
+    };
+    $('nav-ai').onclick = () => {
+      const p = AI[settings.aiProvider] || AI.grok;
+      $('ai-title').textContent = p.name;
+      $('ai-iframe').src = p.url;
+      $('ai-frame').classList.add('open');
+      updateBottom('ai');
+    };
+    $('ai-close').onclick = () => {
+      $('ai-frame').classList.remove('open');
+      updateBottom('home');
+    };
+    $('nav-tabs').onclick = () => {
+      createTab();
+      updateBottom('tabs');
+    };
+    $('nav-settings').onclick = () => {
+      openSettings();
+      updateBottom('settings');
+    };
+
+    function openSettings() {
+      $('sheet-bg').classList.add('show');
+      $('settings-sheet').classList.add('open');
+      apply();
+    }
+    function closeSheets() {
+      $('sheet-bg').classList.remove('show');
+      $('settings-sheet').classList.remove('open');
+    }
+    $('sheet-bg').onclick = closeSheets;
+    $('close-settings').onclick = closeSheets;
+
+    // Settings bindings
+    $('engine').onchange = e => { settings.engine = e.target.value; save(); };
+    $('aiProvider').onchange = e => { settings.aiProvider = e.target.value; save(); };
+    $('fontFamily').onchange = e => { settings.font = e.target.value; save(); apply(); };
+    $('accentColor').oninput = e => { settings.accent = e.target.value; save(); apply(); };
+    $('startBg').oninput = e => { settings.startBg = e.target.value; save(); apply(); };
+    $('barColor').oninput = e => { settings.bar = e.target.value; save(); apply(); };
+    $('rgbSearch').onchange = e => { settings.rgbSearch = e.target.checked; save(); apply(); };
+    $('rgbBar').onchange = e => { settings.rgbBar = e.target.checked; save(); apply(); };
+    $('profileName').oninput = e => { settings.profileName = e.target.value; save(); };
+    $('profileInitials').oninput = e => { settings.profileInitials = e.target.value.slice(0, 2); save(); };
+    $('profileColor').oninput = e => { settings.profileColor = e.target.value; save(); };
+
+    $('addShortcut').onclick = () => {
+      const name = prompt('Nombre:');
+      if (!name) return;
+      let url = prompt('URL:');
+      if (!url) return;
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      settings.shortcuts.push({ name, url, icon: '✦' });
+      save();
+      const t = tabs.find(x => x.id === activeId);
+      if (t && t.isStart) buildStart(t);
+    };
+    $('resetShortcuts').onclick = () => {
+      if (confirm('¿Restablecer accesos?')) {
+        settings.shortcuts = [...DEFAULT_SC];
+        save();
+        const t = tabs.find(x => x.id === activeId);
+        if (t && t.isStart) buildStart(t);
+      }
+    };
+    $('resetAll').onclick = () => {
+      if (confirm('¿Restablecer todo?')) {
+        localStorage.removeItem('nova-mobile-v1');
+        location.reload();
+      }
+    };
+
+    // Init
+    load();
+    apply();
+    createTab();
+
+    // Capacitor / Android bridge hint
+    document.addEventListener('deviceready', () => {}, false);
+  </script>
+</body>
+</html>

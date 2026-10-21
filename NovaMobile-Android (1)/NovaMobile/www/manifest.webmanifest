@@ -1,0 +1,10 @@
+{
+  "name": "Nova Browser",
+  "short_name": "Nova",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": []
+}
